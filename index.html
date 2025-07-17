@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elegant Chatbot UI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --primary-color: #6C63FF;
+            --secondary-color: #4D44DB;
+            --text-color: #2D3748;
+            --light-bg: #F8FAFC;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            color: var(--text-color);
+            background-color: var(--light-bg);
+        }
+        
+        .chat-container {
+            height: 90vh;
+            max-height: 90vh;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .message-animation {
+            animation: messageFadeIn 0.3s ease-out;
+        }
+        
+        @keyframes messageFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .typing-indicator {
+            display: inline-block;
+            position: relative;
+            width: 60px;
+            height: 20px;
+        }
+        
+        .typing-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            position: absolute;
+        }
+        
+        .typing-dot:nth-child(1) {
+            left: 8px;
+            animation: typing 1.2s infinite;
+        }
+        
+        .typing-dot:nth-child(2) {
+            left: 26px;
+            animation: typing 1.2s infinite 0.2s;
+        }
+        
+        .typing-dot:nth-child(3) {
+            left: 44px;
+            animation: typing 1.2s infinite 0.4s;
+        }
+        
+        @keyframes typing {
+            0% {
+                transform: translateY(0);
+            }
+            25% {
+                transform: translateY(-8px);
+            }
+            50% {
+                transform: translateY(0);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .chat-container {
+                height: 100vh;
+                max-height: 100vh;
+                border-radius: 0;
+            }
+            
+            .input-area {
+                padding-bottom: 80px !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <!-- Header with Language Selector -->
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold text-gray-800">-Ryu</h1>
+            <div class="relative">
+                <button id="languageToggle" class="flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm hover:bg-gray-50 transition-all">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+                    </svg>
+                    <span id="currentLanguage">English</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+                <div id="languageDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
+                    <div class="py-1">
+                        <a href="#" data-lang="en" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">English</a>
+                        <a href="#" data-lang="id" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Bahasa Indonesia</a>
+                        <a href="#" data-lang="jp" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">日本語</a>
+                        <a href="#" data-lang="es" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Español</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chat Container -->
+        <div class="chat-container bg-white flex flex-col">
+            <!-- Messages Area -->
+            <div id="chatMessages" class="flex-1 overflow-y-auto p-6 space-y-4">
+                <!-- Welcome Message -->
+                <div class="flex items-start">
+                    <div class="flex-shrink-0">
+                        <img src="https://placehold.co/40x40/6C63FF/FFFFFF?text=ChatBot" alt="Chatbot avatar with purple background and white text saying ChatBot" class="w-10 h-10 rounded-full" />
+                    </div>
+                    <div class="ml-3">
+                        <div class="bg-indigo-100 text-gray-800 p-4 rounded-xl rounded-tl-none max-w-xs md:max-w-md message-animation">
+                            <p id="welcomeMessage">Hello! I'm your AI assistant. How can I help you today?</p>
+                        </div>
+                        <p class="mt-1 text-xs text-gray-500">Just now</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Input Area -->
+            <div class="input-area border-t border-gray-200 p-4 bg-white">
+                <div class="flex items-center">
+                    <input id="userInput" type="text" placeholder="Type your message..." class="flex-1 px-4 py-3 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all">
+                    <button id="sendButton" class="ml-3 p-3 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="mt-3 flex justify-center space-x-2">
+                    <button class="quick-action-btn px-3 py-1 text-xs bg-gray-100 rounded-full hover:bg-gray-200 transition-all">Suggestions</button>
+                    <button class="quick-action-btn px-3 py-1 text-xs bg-gray-100 rounded-full hover:bg-gray-200 transition-all">Help</button>
+                    <button class="quick-action-btn px-3 py-1 text-xs bg-gray-100 rounded-full hover:bg-gray-200 transition-all">Feedback</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Language translations
+        const translations = {
+            en: {
+                welcome: "Hello! I'm your AI assistant. How can I help you today?",
+                placeholder: "Type your message...",
+                quickAction1: "Suggestions",
+                quickAction2: "Help",
+                quickAction3: "Feedback"
+            },
+            id: {
+                welcome: "Halo! Saya asisten AI Anda. Apa yang bisa saya bantu hari ini?",
+                placeholder: "Ketik pesan Anda...",
+                quickAction1: "Saran",
+                quickAction2: "Bantuan",
+                quickAction3: "Masukan"
+            },
+            jp: {
+                welcome: "こんにちは！私はあなたのAIアシスタントです。今日はどのようにお手伝いできますか？",
+                placeholder: "メッセージを入力...",
+                quickAction1: "提案",
+                quickAction2: "ヘルプ",
+                quickAction3: "フィードバック"
+            },
+            es: {
+                welcome: "¡Hola! Soy tu asistente de IA. ¿Cómo puedo ayudarte hoy?",
+                placeholder: "Escribe tu mensaje...",
+                quickAction1: "Sugerencias",
+                quickAction2: "Ayuda",
+                quickAction3: "Comentarios"
+            }
+        };
+        
+        // Current language
+        let currentLang = 'en';
+        
+        // DOM elements
+        const languageToggle = document.getElementById('languageToggle');
+        const languageDropdown = document.getElementById('languageDropdown');
+        const currentLanguageText = document.getElementById('currentLanguage');
+        const welcomeMessage = document.getElementById('welcomeMessage');
+        const userInput = document.getElementById('userInput');
+        const sendButton = document.getElementById('sendButton');
+        const chatMessages = document.getElementById('chatMessages');
+        const quickActionButtons = document.querySelectorAll('.quick-action-btn');
+        
+        // Language toggle functionality
+        languageToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            languageDropdown.classList.toggle('hidden');
+        });
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', () => {
+            languageDropdown.classList.add('hidden');
+        });
+        
+        // Language selection
+        document.querySelectorAll('[data-lang]').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                const lang = e.target.getAttribute('data-lang');
+                currentLang = lang;
+                currentLanguageText.textContent = getLanguageName(lang);
+                updateUIForLanguage(lang);
+                languageDropdown.classList.add('hidden');
+            });
+        });
+        
+        // Get language name for display
+        function getLanguageName(code) {
+            const names = {
+                en: 'English',
+                id: 'Bahasa Indonesia',
+                jp: '日本語',
+                es: 'Español'
+            };
+            return names[code] || 'English';
+        }
+        
+        // Update UI elements based on selected language
+        function updateUIForLanguage(lang) {
+            welcomeMessage.textContent = translations[lang].welcome;
+            userInput.placeholder = translations[lang].placeholder;
+            
+            quickActionButtons[0].textContent = translations[lang].quickAction1;
+            quickActionButtons[1].textContent = translations[lang].quickAction2;
+            quickActionButtons[2].textContent = translations[lang].quickAction3;
+        }
+        
+        // Chat functionality
+        sendButton.addEventListener('click', sendMessage);
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        async function sendMessage() {
+            const messageText = userInput.value.trim();
+            if (messageText === '') return;
+            
+            // Add user message
+            addMessage(messageText, 'user');
+            userInput.value = '';
+            
+            // Show typing indicator
+            showTypingIndicator();
+            
+            // Simulate bot response after delay
+
+            // setTimeout(() => {
+            //     removeTypingIndicator();
+            //     const responseText = getBotResponse(messageText, currentLang);
+            //     addMessage(responseText, 'bot');
+            // }, 1000 + Math.random() * 2000);
+
+             try {
+    const res = await fetch('https://backend-chatbot-two.vercel.app/api/generate', {
+        method: "POST",
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ message: messageText })
+    });
+
+    removeTypingIndicator();
+
+    if (!res.ok) {
+        const errText = await res.text();
+        console.error("Server returned error:", res.status, errText);
+        addMessage("Oops! There was an error from the server.", 'bot');
+        return;
+    }
+
+    const data = await res.json();
+    const markdownText = data.text; // ini markdown dari backend
+const htmlContent = marked.parse(markdownText); // convert ke HTML
+
+addMessage(htmlContent, 'bot', true); // kirim ke UI
+   
+} catch (error) {
+    console.error("Fetch failed:", error);
+    removeTypingIndicator();
+    addMessage("Network error. Please try again.", 'bot');
+}
+
+        }
+        
+        function addMessage(text, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'flex items-start message-animation';
+            
+            if (sender === 'user') {
+                messageDiv.innerHTML = `
+                    <div class="ml-auto max-w-xs md:max-w-md">
+                        <div class="bg-indigo-600 text-white p-4 rounded-xl rounded-tr-none">
+                            <p>${text}</p>
+                        </div>
+                        <p class="mt-1 text-xs text-gray-500 text-right">Just now</p>
+                    </div>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <div class="flex-shrink-0">
+                        <img src="https://placehold.co/40x40/6C63FF/FFFFFF?text=ChatBot" alt="Chatbot avatar with purple background and white text saying ChatBot" class="w-10 h-10 rounded-full" />
+                    </div>
+                    <div class="ml-3">
+                        <div class="bg-indigo-100 text-gray-800 p-4 rounded-xl rounded-tl-none max-w-xs md:max-w-md">
+                            <p>${text}</p>
+                        </div>
+                        <p class="mt-1 text-xs text-gray-500">Just now</p>
+                    </div>
+                `;
+            }
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        function showTypingIndicator() {
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'flex items-start message-animation';
+            typingDiv.id = 'typingIndicator';
+            
+            typingDiv.innerHTML = `
+                <div class="flex-shrink-0">
+                    <img src="https://placehold.co/40x40/6C63FF/FFFFFF?text=ChatBot" alt="Chatbot avatar with purple background and white text saying ChatBot" class="w-10 h-10 rounded-full" />
+                </div>
+                <div class="ml-3">
+                    <div class="bg-indigo-100 text-gray-800 p-4 rounded-xl rounded-tl-none w-20">
+                        <div class="typing-indicator">
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            chatMessages.appendChild(typingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        function removeTypingIndicator() {
+            const typingIndicator = document.getElementById('typingIndicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+        
+        function getBotResponse(message, lang) {
+            // Simple response logic based on language
+            const responses = {
+                en: {
+                    greeting: "Thanks for your message! How can I assist you further?",
+                    help: "I can answer questions, provide information, or just chat. What would you like to know?",
+                    default: "Interesting point! Is there anything specific you'd like me to help with?"
+                },
+                id: {
+                    greeting: "Terima kasih atas pesan Anda! Apa lagi yang bisa saya bantu?",
+                    help: "Saya bisa menjawab pertanyaan, memberikan informasi, atau sekadar mengobrol. Apa yang ingin Anda ketahui?",
+                    default: "Poin yang menarik! Apakah ada sesuatu yang spesifik yang ingin saya bantu?"
+                },
+                jp: {
+                    greeting: "メッセージありがとうございます！さらにどのようにお手伝いできますか？",
+                    help: "質問に答えたり、情報を提供したり、ただおしゃべりしたりできます。何を知りたいですか？",
+                    default: "興味深い点ですね！具体的に何かお手伝いすることはありますか？"
+                },
+                es: {
+                    greeting: "¡Gracias por tu mensaje! ¿Cómo puedo ayudarte más?",
+                    help: "Puedo responder preguntas, proporcionar información o simplemente charlar. ¿Qué te gustaría saber?",
+                    default: "¡Punto interesante! ¿Hay algo específico con lo que te pueda ayudar?"
+                }
+            };
+            
+            const langResponses = responses[lang] || responses.en;
+            
+            if (message.toLowerCase().includes('hello') || message.toLowerCase().includes('hi')) {
+                return langResponses.greeting;
+            } else if (message.toLowerCase().includes('help')) {
+                return langResponses.help;
+            } else {
+                return langResponses.default;
+            }
+        }
+        
+        // Quick action buttons
+        quickActionButtons.forEach((button, index) => {
+            button.addEventListener('click',async () => {
+                let actionText = "";
+                switch(index) {
+                    case 0:
+                        actionText = currentLang === 'en' ? "Can you suggest some topics?" : 
+                                     currentLang === 'id' ? "Bisakah Anda menyarankan beberapa topik?" :
+                                     currentLang === 'jp' ? "いくつかのトピックを提案してもらえますか？" :
+                                     "¿Puedes sugerir algunos temas?";
+                        break;
+                    case 1:
+                        actionText = currentLang === 'en' ? "I need help with something" : 
+                                     currentLang === 'id' ? "Saya butuh bantuan" :
+                                     currentLang === 'jp' ? "何か助けが必要です" :
+                                     "Necesito ayuda con algo";
+                        break;
+                    case 2:
+                        actionText = currentLang === 'en' ? "I want to give feedback" : 
+                                     currentLang === 'id' ? "Saya ingin memberikan masukan" :
+                                     currentLang === 'jp' ? "フィードバックを提供したい" :
+                                     "Quiero dar mi opinión";
+                        break;
+                }
+                
+                // Simulate user sending this message
+                addMessage(actionText, 'user');
+                
+                // Show typing indicator
+                showTypingIndicator();
+                
+                // Simulate bot response after delay
+                // setTimeout(() => {
+                //     removeTypingIndicator();
+                //     const responseText = getBotResponse(actionText, currentLang);
+                //     addMessage(responseText, 'bot');
+                // }, 1000 + Math.random() * 2000);
+               
+            });
+        });
+    </script>
+</body>
+</html>
